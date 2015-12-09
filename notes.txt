@@ -1,0 +1,7 @@
+
+151208:
+
+  Derived from n:\p\fw\fw2, simplifying to update just one 
+  table: ma5:xlog.xlog.
+
+###
