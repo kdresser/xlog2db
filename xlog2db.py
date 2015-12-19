@@ -3,6 +3,7 @@
 #> 1v0
 #> 1v1 - DOSQUAWK, Quiet KBI, XLOG:xlog, XLOG.heartbeats, 
 #        new ffwdb.py and simpler watching logic.
+#> 1v2 - fix thread stop 
 
 ###
 ### xlog2db:
@@ -592,7 +593,7 @@ def exportFile(historical, xfi):
             return                  
 
         # .gz files are always treated as historical, and 
-        # the while file is read. (No seek!)
+        # the whole file is read. (No seek!)
         if pfn.endswith('.gz'):          
             with gzip.open(pfn, 'r', encoding=ENCODING, errors=ERRORS) as f:
                 for x, logrec in enumerate(f):
@@ -779,9 +780,11 @@ def watcherThread():
                 FWTSTOP = True
 
     except KeyboardInterrupt as E:
+        _m.beeps(1)
         # watcherThread:
-        errmsg = '{}: KeyboardInterrupt: {}'.format(me, E)
-        DOSQUAWK(errmsg, beeps=1)
+        msg = '1: {}: KeyboardInterrupt: {}'.format(me, E)
+        _sl.warning(msg)
+        ###---DOSQUAWK(errmsg, beeps=1)
         pass###raise                # Let the thread exit.  Avoids "Exception in thread...".
     except Exception as E:
         errmsg = '%s: E: %s @ %s' % (me, E, _m.tblineno())
@@ -859,7 +862,7 @@ def getFIs(ts):
 #
 def xlog2db():
     global SRCID, SUBID, WPATH, DONESD, INTERVAL
-    global FFWDBPFN, FFWTSTOP, FFWTSTOPPED, XLOGDB
+    global FFWDBPFN, FWTSTOP, FWTSTOPPED, XLOGDB
     me, action = 'xlog2db', ''
     try:
         _sl.info(me + ' begins')#$#
@@ -901,8 +904,10 @@ def xlog2db():
         # Ctrl-c to stop & exit.
 
     except KeyboardInterrupt as E:
-        errmsg = '{}: KeyboardInterrupt: {}'.format(me, E)
-        DOSQUAWK(errmsg, beeps=1)
+        _m.beeps(1)
+        msg = '2: {}: KeyboardInterrupt: {}'.format(me, E)
+        _sl.warning(msg)
+        ###---DOSQUAWK(errmsg, beeps=1)
         pass###raise
     except Exception as E:
         errmsg = '{}: E: {} @ {}'.format(ME, E, _m.tblineno())
@@ -986,13 +991,15 @@ if __name__ == '__main__':
         try:
             xlog2db()
         except KeyboardInterrupt as E:
-            errmsg = '{}: KeyboardInterrupt: {}'.format(ME, E)
-            DOSQUAWKED(errmsg, beeps=1)
+            _m.beeps(1)
+            msg = '3: {}: KeyboardInterrupt: {}'.format(ME, E)
+            _sl.warning(msg)
+            ###---DOSQUAWK(errmsg, beeps=1)
             pass###raise
         except Exception as E:
             errmsg = '{}: E: {}'.format(ME, E)
-            DOSQUAWKED(errmsg)
+            DOSQUAWK(errmsg)
             raise
         finally:
-            closeOutput()
+            shutDown()
             1/1
