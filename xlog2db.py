@@ -1,7 +1,7 @@
 #> !P3!
 
 #> 1v0
-#> 1v1 - DOSQUAWK, Quiet KBI, XLOG:xlog, XLOG.heartbeats, 
+#> 1v1 - DOSQUAWK, Quiet KBI, XLOG:xlog, XLOG.heartbeat, 
 #        new ffwdb.py and simpler watching logic.
 #> 1v2 - fix thread stop 
 
@@ -10,7 +10,7 @@
 ###
 ###     A file watcher of xlog output flatfiles.
 ###     Normal logfile messages are loaded to table XLOG:xlog.
-###     Heartbeat logrecs are stored in table XLOG.heartbeats for 
+###     Heartbeat logrecs are stored in table XLOG.heartbeat for 
 ###       monitoring.  Only the lastest heartbeats are stored.
 ###     Files are named "YYMMDD-HH.log" for natural sequencing.
 ###       No file inodes or timestamps are used.
@@ -90,7 +90,7 @@ _sl = l_simple_logger.SimpleLogger(screen_writer=_sw)
 import l_dt as _dt
 import l_misc as _m
 
-OWNHEARTBEAT = True                 # Add our own heartbeat records to XLOG:heartbeats.
+OWNHEARTBEAT = True                 # Add our own heartbeat records to XLOG:heartbeat.
 SRCID = SUBID = None                # SRCID, SUBID for our own heartbeats.
 
 TEST = False                        # Unused.
@@ -134,7 +134,7 @@ for fn in DB_FNS_XLOG:
     DB_FNL_XLOG += fn
     DB_FIL_XLOG += '%s'
 
-# >>> Table [heartbeats].  (The same fields as in the xlog table.)
+# >>> Table [heartbeat].  (The same fields as in the xlog table.)
 DB_FNS_HBS = DB_FNS_XLOG
 DB_FNL_HBS, DB_FIL_HBS = DB_FNL_XLOG, DB_FIL_XLOG
 DB_FUL_HBS = ''                 # Field update list.
@@ -289,7 +289,7 @@ def addHeartbeat(logrec):
                 NOLDBEATS += 1
                 return 
         # logrec is new or newer: update staging dict. 
-        v = [_S(rxts2), _S(txts2), _S(srcid), _S(subid), _S(el), _S(sl), _S(sha1), _S(kvs)]  # !!! Matches xlog/heartbeats table.
+        v = [_S(rxts2), _S(txts2), _S(srcid), _S(subid), _S(el), _S(sl), _S(sha1), _S(kvs)]  # !!! Matches xlog/heartbeat table.
         HEARTBEATS[k] = v
     except Exception as E:
         errmsg = '%s: E: %s @ %s' % (me, E, _m.tblineno())
@@ -299,7 +299,7 @@ def addHeartbeat(logrec):
         pass
 
 #
-# flushHeartbeats: Load staging dict contents into XLOG.heartbeats.
+# flushHeartbeats: Load staging dict contents into XLOG.heartbeat.
 #                  Only new or newer (by txts) are loaded.
 #
 def flushHeartbeats():
@@ -313,7 +313,7 @@ def flushHeartbeats():
             txts, srcid, subid = float(v[1]), v[2], v[3]    # !MAGIC! tuple indices.
             try:
                 c = XLOGDB.cursor()
-                c.execute('select txts from heartbeats where srcid=%s and subid=%s', (srcid, subid))
+                c.execute('select txts from heartbeat where srcid=%s and subid=%s', (srcid, subid))
                 try:    xtxts = c.fetchone()[0]
                 except: xtxts = None
             finally:
@@ -321,10 +321,10 @@ def flushHeartbeats():
             try:
                 c = XLOGDB.cursor()
                 if   xtxts is None:
-                    sql = 'insert into heartbeats (%s) values (%s)' % (DB_FNL_HBS, DB_FIL_HBS)
+                    sql = 'insert into heartbeat (%s) values (%s)' % (DB_FNL_HBS, DB_FIL_HBS)
                     c.execute(sql, v)
                 elif txts > xtxts:
-                    sql = 'update heartbeats set %s where srcid=%s and subid=%s' % (DB_FUL_HBS, '%s', '%s')
+                    sql = 'update heartbeat set %s where srcid=%s and subid=%s' % (DB_FUL_HBS, '%s', '%s')
                     v.append(srcid)
                     v.append(subid)
                     c.execute(sql, v)
